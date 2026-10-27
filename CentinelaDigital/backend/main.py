@@ -59,7 +59,7 @@ def crear_reporte():
         if conexion:
             conexion.rollback()
         app.logger.exception("No se pudo crear el reporte")
-        return jsonify({"error": str(error)}), 500
+        return jsonify({"error": "No se pudo registrar el reporte"}), 500
     finally:
         if conexion:
             conexion.close()
@@ -81,7 +81,7 @@ def eliminar_reporte(reporte_id):
         if conexion:
             conexion.rollback()
         app.logger.exception("No se pudo eliminar el reporte")
-        return jsonify({"error": str(error)}), 500
+        return jsonify({"error": "No se pudo eliminar el reporte"}), 500
     finally:
         if conexion:
             conexion.close()
