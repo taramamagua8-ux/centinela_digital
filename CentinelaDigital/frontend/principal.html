@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centinela Digital - Confirmación</title>
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link rel="stylesheet" href="estilos.css">
+
+
+
+
+
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+
+
+
+
+
+
+
+
+
+</head>
+<body>
+
+    <!-- Tarjeta contenedora transparente como en tu boceto -->
+    <div class="tarjeta-confirmacion-panel">
+        
+        <h1 class="titulo-confirmacion">¡Reporte registrado correctamente!</h1>
+        
+        <p class="subtitulo-confirmacion">Número de reporte asignado de forma asíncrona:</p>
+        
+        <div class="bloque-id-reporte">
+            <strong>Reporte ID: <span id="numReporte">--</span></strong>
+        </div>
+        
+        <p class="fecha-registro-texto" id="fechaRegistro"></p>
+        
+        <!-- Botón Amarillo solicitado: Ir a mi menú -->
+        <div class="zona-botones-menu">
+            <a href="index.html" class="btn-ir-menu">Ir a mi menú</a>
+        </div>
+
+        <!-- Botón de eliminación abajo a la derecha (Círculo rojo de tu dibujo) -->
+        <button id="btnEliminar" class="btn-eliminar-esquina" title="Eliminar Registro">
+            ❌ Eliminar Cuenta
+        </button>
+    </div>
+
+    <script>
+        const reporte = JSON.parse(localStorage.getItem('reporte_activo'));
+
+        if (!reporte) {
+            window.location.href = 'index.html';
+        } else {
+            document.getElementById('numReporte').textContent = reporte.id;
+            document.getElementById('fechaRegistro').textContent = `Registrado el: ${reporte.fecha}`;
+        }
+
+       document.getElementById('btnEliminar').addEventListener('click', async () => {
+    if (confirm('¿Seguro que deseas eliminar tu registro de la base de datos?')) {
+        try {
+            const respuesta = await fetch(`http://127.0.0.1:5000/api/reportes/${reporte.id}`, {
+                method: 'DELETE'
+            });
+
+            if (respuesta.ok) {
+                localStorage.removeItem('reporte_activo');
+                alert('Registro eliminado de la base de datos de manera segura.');
+                window.location.href = 'index.html';
+            } else {
+                const datos = await respuesta.json();
+                alert('Error: ' + (datos.error || 'No se pudo eliminar'));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error al intentar eliminar el registro.');
+        }
+    }
+});
+
+    </script>
+</body>
+</html>

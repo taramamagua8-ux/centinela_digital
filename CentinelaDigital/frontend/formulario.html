@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centinela Digital - Formulario</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <!-- Contenedor único e independiente para la pantalla del formulario -->
+    <div class="pantalla-formulario">
+        <div class="tarjeta-formulario-limpia">
+            <h2>Formulario de Reporte</h2>
+            <form id="formularioReporte">
+                
+                <div class="grupo-formulario">
+                    <label for="tipo_registro">¿Cómo deseas realizar tu reporte?</label>
+                    <select id="tipo_registro" required>
+                        <option value="" disabled selected>Selecciona una opción</option>
+                        <option value="Anonimo">Anónimo</option>
+                        <option value="Registrado">Registrado</option>
+                    </select>
+                </div>
+
+                <div class="grupo-formulario">
+                    <label for="rol_usuario">¿Cuál es tu rol en esta situación?</label>
+                    <select id="rol_usuario" required>
+                        <option value="" disabled selected>Selecciona una opción</option>
+                        <option value="Victima">Víctima</option>
+                        <option value="Testigo">Testigo</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-formulario">Enviar Reporte</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('formularioReporte').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const datos = {
+                tipo_registro: document.getElementById('tipo_registro').value,
+                rol_usuario: document.getElementById('rol_usuario').value
+            };
+
+            try {
+                const respuesta = await fetch('http://127.0.0.1:5000/api/reportes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(datos)
+                });
+
+                const datosServidor = await respuesta.json();
+
+                if (respuesta.status === 201) {
+                    localStorage.setItem('reporte_activo', JSON.stringify(datosServidor.reporte));
+                    window.location.href = 'principal.html';
+                } else {
+                    alert('Error: ' + (datosServidor.error || 'No se pudo registrar'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('No se pudo conectar con el servidor.');
+            }
+        });
+    </script>
+</body>
+</html>

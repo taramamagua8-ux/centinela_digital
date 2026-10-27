@@ -1,0 +1,9 @@
+CREATE DATABASE IF NOT EXISTS centinela_bd;
+USE centinela_bd;
+
+CREATE TABLE IF NOT EXISTS reportes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_registro VARCHAR(50) NOT NULL,
+    rol_usuario VARCHAR(50) NOT NULL,
+    fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
