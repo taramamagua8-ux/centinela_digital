@@ -1,67 +1,91 @@
-from flask import Flask, request, jsonify
+import os
+
+import psycopg2
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-import mysql.connector
 
 app = Flask(__name__)
-# Esto da permiso absoluto para que tu formulario HTML se conecte sin bloqueos
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# Conexión local a tu MySQL de XAMPP
+
 def obtener_conexion():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="", # Déjalo vacío si usas XAMPP por defecto
-        database="centinela_bd"
-    )
+    """Conecta a PostgreSQL usando la URL privada de Render."""
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("Falta configurar la variable de entorno DATABASE_URL")
+    return psycopg2.connect(database_url)
 
-@app.route('/api/reportes', methods=['POST'])
+
+@app.get("/")
+def estado():
+    return jsonify({"estado": "ok", "servicio": "Centinela Digital API"})
+
+
+@app.post("/api/reportes")
 def crear_reporte():
+    datos = request.get_json(silent=True) or {}
+    tipo_registro = datos.get("tipo_registro")
+    rol_usuario = datos.get("rol_usuario")
+
+    if not tipo_registro or not rol_usuario:
+        return jsonify({"error": "Faltan datos obligatorios"}), 400
+
+    conexion = None
     try:
-        datos = request.json
-        tipo_registro = datos.get('tipo_registro')
-        rol_usuario = datos.get('rol_usuario')
-        
         conexion = obtener_conexion()
-        cursor = conexion.cursor()
-        
-        query = "INSERT INTO reportes (tipo_registro, rol_usuario) VALUES (%s, %s)"
-        cursor.execute(query, (tipo_registro, rol_usuario))
+        with conexion.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO reportes (tipo_registro, rol_usuario)
+                VALUES (%s, %s)
+                RETURNING id, tipo_registro, rol_usuario, fecha
+                """,
+                (tipo_registro, rol_usuario),
+            )
+            reporte = cursor.fetchone()
         conexion.commit()
-        
-        nuevo_id = cursor.lastrowid
-        cursor.close()
-        conexion.close()
-        
-        return jsonify({
-            "mensaje": "Pedido registrado correctamente",
-            "reporte": {
-                "id": nuevo_id,
-                "tipo_registro": tipo_registro,
-                "rol_usuario": rol_usuario,
-                "fecha": "Hoy"
+        return jsonify(
+            {
+                "mensaje": "Reporte registrado correctamente",
+                "reporte": {
+                    "id": reporte[0],
+                    "tipo_registro": reporte[1],
+                    "rol_usuario": reporte[2],
+                    "fecha": reporte[3].isoformat(),
+                },
             }
-        }), 201
-        
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        ), 201
+    except Exception as error:
+        if conexion:
+            conexion.rollback()
+        app.logger.exception("No se pudo crear el reporte")
+        return jsonify({"error": str(error)}), 500
+    finally:
+        if conexion:
+            conexion.close()
 
-# 2ª Solicitud HTTP: Eliminar Registro (DELETE)
-@app.route('/api/reportes/<int:id>', methods=['DELETE'])
-def eliminar_reporte(id):
+
+@app.delete("/api/reportes/<int:reporte_id>")
+def eliminar_reporte(reporte_id):
+    conexion = None
     try:
         conexion = obtener_conexion()
-        cursor = conexion.cursor()
-        
-        query = "DELETE FROM reportes WHERE id = %s"
-        cursor.execute(query, (id,))
+        with conexion.cursor() as cursor:
+            cursor.execute("DELETE FROM reportes WHERE id = %s", (reporte_id,))
+            eliminado = cursor.rowcount
         conexion.commit()
-        
-        cursor.close()
-        conexion.close()
-        return jsonify({"mensaje": "Registro eliminado correctamente"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        if not eliminado:
+            return jsonify({"error": "Reporte no encontrado"}), 404
+        return jsonify({"mensaje": "Reporte eliminado correctamente"})
+    except Exception as error:
+        if conexion:
+            conexion.rollback()
+        app.logger.exception("No se pudo eliminar el reporte")
+        return jsonify({"error": str(error)}), 500
+    finally:
+        if conexion:
+            conexion.close()
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")))

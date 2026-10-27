@@ -50,7 +50,7 @@
             };
 
             try {
-                const respuesta = await fetch('http://127.0.0.1:5000/api/reportes', {
+                const respuesta = await fetch('https://centinela-digital-api.onrender.com/api/reportes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(datos)

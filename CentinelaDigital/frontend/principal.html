@@ -64,7 +64,7 @@
        document.getElementById('btnEliminar').addEventListener('click', async () => {
     if (confirm('¿Seguro que deseas eliminar tu registro de la base de datos?')) {
         try {
-            const respuesta = await fetch(`http://127.0.0.1:5000/api/reportes/${reporte.id}`, {
+            const respuesta = await fetch(`https://centinela-digital-api.onrender.com/api/reportes/${reporte.id}`, {
                 method: 'DELETE'
             });
 
